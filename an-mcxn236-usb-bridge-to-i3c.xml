@@ -1,0 +1,24 @@
+<data:item xmlns:data="data" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="data ../../xsd/alp.xsd" type="app_note" format="projectfile" versionSchema="1.0.0" name="mcxn236-usb-bridge-to-i3c" uuid="eed09077-ad54-4f3e-b371-fc94e8f427db">
+    <display_title>
+        AN14434 How to implement MCXN236 USB to I3C demo
+    </display_title>
+    <overview>
+        <![CDATA[This is the complementary project for [AN14434](https://www.nxp.com.cn/docs/en/application-note/AN14434.pdf), which demonstrates how implement usb to i3c demo on MCXN236.<br><br>In the MCXN236 USB to I3C demo, the USB device uses USB CDC virtual com class to communicate with PC host.&nbsp;<br>You can use terminal tool to send a serial data to control I3C interface.<br>The terminal tool used in following contents is pzh-py-com tool. Customer can download it from followed link: https://github.com/JayHeng/pzh-py-com.<br>This demo provided some commands such as Dynamic address assign, direct write, direct read, write with register address, read with register address, IBI/Hot-join functions.<br>[&lt;img src="./images/MCXN236_USB_TO_I3C_Block.png" align="center" width="800"/&gt;](./images/MCXN236_USB_TO_I3C_Block.png)]]>
+    </overview>
+    <toolchains>
+        <toolchain name="mcux"></toolchain>
+    </toolchains>
+    <families>
+        <family name="mcx"></family>
+    </families>
+    <nxp_compatible_hw>
+        <hw id="FRDM-MCXN236"></hw>
+    </nxp_compatible_hw>
+    <peripherals>
+        <peripheral name="i3c"></peripheral>
+        <peripheral name="usb"></peripheral>
+    </peripherals>
+    <categories>
+        <category name="hmi"></category>
+    </categories>
+</data:item>

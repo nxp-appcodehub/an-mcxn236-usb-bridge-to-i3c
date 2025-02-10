@@ -1,0 +1,12 @@
+NXP Software Content Register
+
+Package:                   an-mcxn236-usb-bridge-to-i3c
+
+Version:                   1.0
+Outgoing License:          BSD-3-Clause
+License File:              LICENSE
+Description and Comments:  This is the source code for MCXN235 USB to I3C Application Note, demonstrates how to implement usb to i3c on MCXN236.
+Release Location:          https://github.com/nxp-appcodehub/an-mcxn236-usb-bridge-to-i3c
+Origin:                    NXP (BSD-3-Clause)
+                           cmsis - ARM 5.6.0 (Apache-2.0) - https://github.com/ARM-software/CMSIS_5/
+
