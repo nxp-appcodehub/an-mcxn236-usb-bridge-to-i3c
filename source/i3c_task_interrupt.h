@@ -39,7 +39,7 @@ typedef struct _usb_i3c_daa_param
 /* Define the information relates to abstract control model */
 typedef struct _usb_i3c_param
 {
-	bool  i3c_mode;
+	i3c_bus_type_t  i3c_mode;
 	usb_i3c_daa_param_t daa_para;
 	usb_i3c_ccc_t ccc_code;
 	uint8_t slaveAddress;
