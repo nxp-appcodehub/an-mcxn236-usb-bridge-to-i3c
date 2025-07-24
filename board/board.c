@@ -193,7 +193,7 @@ void BOARD_PowerMode_OD(void)
     SPC_SetActiveModeDCDCRegulatorConfig(SPC0, &opt);
 
     spc_sram_voltage_config_t cfg = {
-        .operateVoltage       = kSPC_sramOperateAt1P2V,
+        .operateVoltage       = kSPC_sramOperateAt1P1V,
         .requestVoltageUpdate = true,
     };
     SPC_SetSRAMOperateVoltage(SPC0, &cfg);

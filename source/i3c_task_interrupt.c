@@ -32,8 +32,8 @@ volatile uint8_t g_transferCompletionCounts = 0;
 volatile status_t g_completionStatus = kStatus_Success;
 uint8_t g_ibiUserBuff[10U];
 uint8_t g_ibiUserBuffUsed = 0;
-uint8_t g_i3c_tx_buffer[4096];
-uint8_t g_i3c_rx_buffer[4096];
+uint8_t g_i3c_tx_buffer[1024];
+uint8_t g_i3c_rx_buffer[1024];
 uint8_t g_slaveAddr;
 uint8_t g_addressList[8];
 uint8_t g_ibiList[5];
@@ -226,14 +226,7 @@ status_t usb_i3c_reg_data_write(uint8_t interface_idex, usb_i3c_param_t param, i
     masterXfer.subaddress   = param.regAddress;
     masterXfer.subaddressSize = 1;
     masterXfer.direction    = kI3C_Write;
-    if(param.i3c_mode)
-    {
-        masterXfer.busType      = kI3C_TypeI3CSdr;
-    }
-    else
-    {
-        masterXfer.busType      = kI3C_TypeI2C;
-    }
+    masterXfer.busType      = param.i3c_mode ;
     masterXfer.flags        = kI3C_TransferDefaultFlag;
     masterXfer.ibiResponse  = kI3C_IbiRespAckMandatory;
     result                  = I3C_MasterTransferNonBlocking(i3c_index, s_i3c_m_handle, &masterXfer);
@@ -260,14 +253,7 @@ status_t usb_i3c_data_write(uint8_t interface_idex, usb_i3c_param_t param, i3c_m
     masterXfer.data         = g_i3c_tx_buffer;
     masterXfer.dataSize     = param.len;
     masterXfer.direction    = kI3C_Write;
-    if(param.i3c_mode)
-    {
-        masterXfer.busType      = kI3C_TypeI3CSdr;
-    }
-    else
-    {
-        masterXfer.busType      = kI3C_TypeI2C;
-    }
+    masterXfer.busType      = param.i3c_mode ;
     masterXfer.flags        = kI3C_TransferDefaultFlag;
     masterXfer.ibiResponse  = kI3C_IbiRespAckMandatory;
     result                  = I3C_MasterTransferNonBlocking(i3c_index, s_i3c_m_handle, &masterXfer);
@@ -290,20 +276,13 @@ status_t usb_i3c_reg_data_read(uint8_t interface_idex, usb_i3c_param_t param, i3
 
     memset(&masterXfer, 0, sizeof(masterXfer));
 
-    masterXfer.slaveAddress   = param.slaveAddress;
-    masterXfer.data           = g_i3c_rx_buffer;
-    masterXfer.dataSize       = param.len;
-    masterXfer.subaddress     = param.regAddress;
+    masterXfer.slaveAddress = param.slaveAddress;
+    masterXfer.data         = g_i3c_rx_buffer;
+    masterXfer.dataSize     = param.len;
+    masterXfer.subaddress   = param.regAddress;
     masterXfer.subaddressSize = 1;
-    masterXfer.direction      = kI3C_Read;
-    if(param.i3c_mode)
-    {
-        masterXfer.busType    = kI3C_TypeI3CSdr;
-    }
-    else
-    {
-        masterXfer.busType    = kI3C_TypeI2C;
-    }
+    masterXfer.direction    = kI3C_Read;
+    masterXfer.busType      = param.i3c_mode ;
     masterXfer.flags        = kI3C_TransferDefaultFlag;
     masterXfer.ibiResponse  = kI3C_IbiRespAckMandatory;
     result                  = I3C_MasterTransferNonBlocking(i3c_index, s_i3c_m_handle, &masterXfer);
@@ -330,14 +309,7 @@ status_t usb_i3c_data_read(uint8_t interface_idex, usb_i3c_param_t param, i3c_ma
     masterXfer.data         = g_i3c_rx_buffer;
     masterXfer.dataSize     = param.len;
     masterXfer.direction    = kI3C_Read;
-    if(param.i3c_mode)
-    {
-        masterXfer.busType  = kI3C_TypeI3CSdr;
-    }
-    else
-    {
-        masterXfer.busType  = kI3C_TypeI2C;
-    }
+    masterXfer.busType      = param.i3c_mode ;
     masterXfer.flags        = kI3C_TransferDefaultFlag;
     masterXfer.ibiResponse  = kI3C_IbiRespAckMandatory;
     result                  = I3C_MasterTransferNonBlocking(i3c_index, s_i3c_m_handle, &masterXfer);
@@ -377,10 +349,13 @@ status_t usb_i3c_list_DAA(uint8_t interface_idex, usb_i3c_param_t param, i3c_mas
     	g_deviceList[devIndex][5] = devList[devIndex].partNumber;
     	g_deviceList[devIndex][6] = devList[devIndex].bcr;
     	g_deviceList[devIndex][7] = devList[devIndex].dcr;
-    	g_deviceList[devIndex][8] = devList[devIndex].dynamicAddr;
-    }
 
-    I3C_MasterClearUsedDevCount(); //need to clear the used device count
+    	if (devList[devIndex].vendorID == param.daa_para.vendor_id)
+        {
+        	g_slaveAddr = devList[devIndex].dynamicAddr;
+            break;
+        }
+    }
 
     if (devIndex == devCount)
     {
@@ -506,10 +481,10 @@ void usb_i3c_get_send_buf(uint8_t *buf, usb_i3c_state_t usb_i3c_state, usb_i3c_p
     		memset(g_addressList, 0, param.daa_para.address_num);
 			for(uint32_t devIndex = 0; devIndex < param.daa_para.address_num; devIndex++)
 			{
-				memcpy(buf, &g_deviceList[devIndex][0], 9);
-				buf = (buf + 9);
+				memcpy(buf, &g_deviceList[devIndex][0], 8);
+				buf = (buf + 8);
 			}
-			*send_size = ((param.daa_para.address_num * 9));
+			*send_size = ((param.daa_para.address_num * 8));
 			break;
 		default:
 			break;

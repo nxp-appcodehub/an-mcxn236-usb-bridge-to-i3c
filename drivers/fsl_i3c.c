@@ -861,9 +861,9 @@ void I3C_GetDefaultConfig(i3c_config_t *config)
     config->hKeep                        = kI3C_MasterHighKeeperNone;
     config->enableOpenDrainStop          = true;
     config->enableOpenDrainHigh          = true;
-    config->baudRate_Hz.i2cBaud          = 1000000U;
+    config->baudRate_Hz.i2cBaud          = 400000U;
     config->baudRate_Hz.i3cPushPullBaud  = 12500000U;
-    config->baudRate_Hz.i3cOpenDrainBaud = 1000000U;
+    config->baudRate_Hz.i3cOpenDrainBaud = 2500000U;
     config->masterDynamicAddress         = 0x0AU; /* Default master dynamic address. */
 #if !(defined(FSL_FEATURE_I3C_HAS_NO_SCONFIG_BAMATCH) && FSL_FEATURE_I3C_HAS_NO_SCONFIG_BAMATCH)
     config->slowClock_Hz                 = 0; /* Not update the Soc default setting. */
@@ -1029,9 +1029,9 @@ void I3C_MasterGetDefaultConfig(i3c_master_config_t *masterConfig)
     masterConfig->hKeep                        = kI3C_MasterHighKeeperNone;
     masterConfig->enableOpenDrainStop          = true;
     masterConfig->enableOpenDrainHigh          = true;
-    masterConfig->baudRate_Hz.i2cBaud          = 1000000U;
+    masterConfig->baudRate_Hz.i2cBaud          = 400000U;
     masterConfig->baudRate_Hz.i3cPushPullBaud  = 12500000U;
-    masterConfig->baudRate_Hz.i3cOpenDrainBaud = 1000000U;
+    masterConfig->baudRate_Hz.i3cOpenDrainBaud = 2500000U;
 }
 
 /*!
@@ -1383,6 +1383,23 @@ status_t I3C_MasterRepeatedStartWithRxSize(
 
     base->MCTRL = mctrlVal;
 
+#if T_DELAY_RS
+    /*delay to keep the I3C_SCL Pin output low before repeated start*/
+    for(uint32_t i = 0; i < 6; i++)
+    {
+        __NOP();
+    }
+
+	if(base == I3C0)
+	{
+	    PORT_SetPinConfig(I3C0_SCL_PORT, I3C0_SCL_PIN, &g_i3c_scl_config);//configure the I3C_SCL Pin function to I3C mode
+	}
+	else if(base == I3C1)
+	{
+	    PORT_SetPinConfig(I3C1_SCL_PORT, I3C1_SCL_PIN, &g_i3c_scl_config);//configure the I3C_SCL Pin function to I3C mode
+	}
+#endif
+    /***************************************************************************/
     return kStatus_Success;
 }
 /*!
@@ -1832,15 +1849,6 @@ i3c_device_info_t *I3C_MasterGetDeviceListAfterDAA(I3C_Type *base, uint8_t *coun
 }
 
 /*!
- * @brief Clear the used device count.
- * @return None.
- */
-void I3C_MasterClearUsedDevCount(void)
-{
-	usedDevCount = 0U;
-}
-
-/*!
  * @brief introduce function I3C_MasterClearFlagsAndEnableIRQ.
  *
  * This function was used of Clear all flags and Enable I3C IRQ sources for @param *base.
@@ -2268,7 +2276,7 @@ static void I3C_TransferStateMachineWaitRepeatedStartCompleteState(I3C_Type *bas
     /* We stay in this state until the master complete. */
     if (0UL != (stateParams->status & (uint32_t)kI3C_MasterCompleteFlag))
     {
-#if 1
+#if T_DELAY_RS
         /*configure the I3C_SCL pin as GPIO mode to toggle the I3C_SCL pin to low*/
     	if(base == I3C0)
     	{
@@ -2280,27 +2288,22 @@ static void I3C_TransferStateMachineWaitRepeatedStartCompleteState(I3C_Type *bas
             PORT_SetPinConfig(I3C1_SCL_PORT, I3C1_SCL_PIN, &g_i3c_scl_gpio_config);//configure the I3C1_SCL pin as GPIO mode
             GPIO_PinInit(GPIO1, I3C1_SCL_PIN, &gpio_test_l);//make I3C1_SCL pin to low
     	}
+        /***************************************************************************/
 
-    	/**********************delay 5us before repeated start**********************/
-		for(uint8_t i = 0; i < 130; i++)//the number of i is determined by the core clock and code optimize level
+    	/**********************delay 2us before repeated start**********************/
+		GPIO_PinInit(GPIO4, 0, &gpio_test_h);//used to toggle IO to see the delay time
+		for(uint32_t i = 0; i < 68; i++)//the number of i is determined by the core clock and code optimize level
 		{
 			__NOP();
 		}
-
-		if(base == I3C0)
-		{
-		    PORT_SetPinConfig(I3C0_SCL_PORT, I3C0_SCL_PIN, &g_i3c_scl_config);//configure the I3C_SCL Pin function to I3C mode
-		}
-		else if(base == I3C1)
-		{
-		    PORT_SetPinConfig(I3C1_SCL_PORT, I3C1_SCL_PIN, &g_i3c_scl_config);//configure the I3C_SCL Pin function to I3C mode
-		}
+		GPIO_PinInit(GPIO4, 0, &gpio_test_l);// used to toggle IO to see the delay time
+        /***************************************************************************/
 #endif
         handle->state = (uint8_t)kTransferDataState;
 
         I3C_MasterDisableInterrupts(base, (uint32_t)kI3C_MasterTxReadyFlag);
 
-        if (handle->remainingBytes != 0U)
+        if (handle->remainingBytes < 256U)
         {
             handle->rxTermOps = (handle->rxTermOps == kI3C_RxTermDisable) ? handle->rxTermOps : kI3C_RxAutoTerm;
 
@@ -2388,7 +2391,7 @@ static void I3C_TransferStateMachineWaitForCompletionState(i3c_master_handle_t *
     /* We stay in this state until the maste complete. */
     if (0UL != (stateParams->status & (uint32_t)kI3C_MasterCompleteFlag))
     {
-        handle->state = (uint8_t)kStopState;
+		handle->state = (uint8_t)kStopState;
     }
     else
     {
@@ -2585,13 +2588,22 @@ static status_t I3C_InitTransferStateMachine(I3C_Type *base, i3c_master_handle_t
     /* If repeated start is requested, send repeated start. */
     else if (0U != (xfer->flags & (uint32_t)kI3C_TransferRepeatedStartFlag))
     {
-        result = I3C_MasterRepeatedStart(base, xfer->busType, xfer->slaveAddress, direction);
+    	if ((handle->remainingBytes < 256U) && (direction == kI3C_Read))
+    	{
+    		I3C_MasterStartWithRxSize(
+    				base, xfer->busType, xfer->slaveAddress, direction, (uint8_t)handle->remainingBytes);
+    	}
+    	else
+    	{
+            result = I3C_MasterStart(base, xfer->busType, xfer->slaveAddress, direction);
+    	}
     }
     else /* For normal transfer, send start. */
     {
-    	if(direction == kI3C_Read)
+    	if ((handle->remainingBytes < 256U) && (direction == kI3C_Read))
     	{
-            result = I3C_MasterStartWithRxSize(base, xfer->busType, xfer->slaveAddress, direction, handle->remainingBytes);
+    		I3C_MasterStartWithRxSize(
+    				base, xfer->busType, xfer->slaveAddress, direction, (uint8_t)handle->remainingBytes);
     	}
     	else
     	{
@@ -2615,6 +2627,7 @@ static status_t I3C_InitTransferStateMachine(I3C_Type *base, i3c_master_handle_t
     if ((handle->remainingBytes < 256U) && (direction == kI3C_Read))
     {
         handle->rxTermOps = (handle->rxTermOps == kI3C_RxTermDisable) ? handle->rxTermOps : kI3C_RxAutoTerm;
+        base->MCTRL |= I3C_MCTRL_RDTERM(handle->remainingBytes);
     }
 
     return result;

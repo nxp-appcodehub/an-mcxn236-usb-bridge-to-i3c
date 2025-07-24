@@ -111,7 +111,7 @@ void i3cInit(void)
     {
     	s_i3c_m_handle = (i == 0x0) ? &g_i3c0_m_handle : &g_i3c1_m_handle;
 
-		param.i2c_freq = 400000;
+		param.i2c_freq = 1000000;
 		param.od_freq  = 1000000;
 		param.pp_freq  = 12500000;
 
@@ -415,12 +415,12 @@ void USB_DeviceCdcVcomTask(void)
             {
             	i3c_transfer_start = false;
 
-            	/*write without register address 'WN(0x57 0x44) slaveAddress() len() data()'*/
+            	/*write without register address 'WN(0x57 0x44) I3C/I2C mode(0x00: I3C mode, 0x01: I2C mode) slaveAddress() len() data()'*/
             	if((vcomInstance->totalRecvBuf[0] == 0x57) && (vcomInstance->totalRecvBuf[1] == 0x44))
             	{
             		memset(&param, 0, sizeof(param));
             		i3c_state = KUSB_I3C_DataWrite;
-            		param.i3c_mode = vcomInstance->totalRecvBuf[2];
+            		param.i3c_mode = (i3c_bus_type_t)vcomInstance->totalRecvBuf[2];
             		param.slaveAddress = vcomInstance->totalRecvBuf[3];
             		param.len = ((vcomInstance->totalRecvBuf[4] << 0x8) | vcomInstance->totalRecvBuf[5]);
             		usb_i3c_send_recv_buf((vcomInstance->totalRecvBuf + 6), i3c_state, param.len);
@@ -438,18 +438,18 @@ void USB_DeviceCdcVcomTask(void)
             	{
             		memset(&param, 0, sizeof(param));
             		i3c_state = KUSB_I3C_RegDataWrite;
-            		param.i3c_mode = vcomInstance->totalRecvBuf[2];
+            		param.i3c_mode = (i3c_bus_type_t)vcomInstance->totalRecvBuf[2];
             		param.slaveAddress = vcomInstance->totalRecvBuf[3];
             		param.regAddress = vcomInstance->totalRecvBuf[4];
             		param.len = ((vcomInstance->totalRecvBuf[5] << 0x8) | vcomInstance->totalRecvBuf[6]);
             		usb_i3c_send_recv_buf((vcomInstance->totalRecvBuf + 7), i3c_state, param.len);
-            		//if(param.len)
+            		if(param.len)
 					{
             			usb_i3c_reg_data_write(i, param, s_i3c_m_handle);
 					}
-					//else
+					else
 					{
-						//send_size = 0;
+						send_size = 0;
 					}
             	}
             	/*Read without register address 'RN(0x52 0x44) slaveAddress() len()*/
@@ -457,7 +457,7 @@ void USB_DeviceCdcVcomTask(void)
             	{
             		memset(&param, 0, sizeof(param));
             		i3c_state = KUSB_I3C_DataRead;
-            		param.i3c_mode = vcomInstance->totalRecvBuf[2];
+            		param.i3c_mode = (i3c_bus_type_t)vcomInstance->totalRecvBuf[2];
             		param.slaveAddress = vcomInstance->totalRecvBuf[3];
             		param.len = ((vcomInstance->totalRecvBuf[4] << 0x8) | vcomInstance->totalRecvBuf[5]);
             		if(param.len)
@@ -474,17 +474,17 @@ void USB_DeviceCdcVcomTask(void)
             	{
             		memset(&param, 0, sizeof(param));
             		i3c_state = KUSB_I3C_RegDataRead;
-            		param.i3c_mode = vcomInstance->totalRecvBuf[2];
+            		param.i3c_mode = (i3c_bus_type_t)vcomInstance->totalRecvBuf[2];
             		param.slaveAddress = vcomInstance->totalRecvBuf[3];
             		param.regAddress = vcomInstance->totalRecvBuf[4];
             		param.len = ((vcomInstance->totalRecvBuf[5] >> 0x8) | vcomInstance->totalRecvBuf[6]);
-            		//if(param.len)
+            		if(param.len)
 					{
             			usb_i3c_reg_data_read(i, param, s_i3c_m_handle);
 					}
-					//else
+					else
 					{
-						//send_size = 0;
+						send_size = 0;
 					}
             	}
             	/*List DAA 'LDAA(0x4C 0x44 0x41 0x41) addressNum() vendorID(u16) dynamicAddress()'*/

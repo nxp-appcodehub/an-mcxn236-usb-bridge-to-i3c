@@ -1335,13 +1335,6 @@ static inline status_t I3C_MasterProcessDAA(I3C_Type *base, uint8_t *addressList
  * @return Pointer to the i3c_device_info_t array.
  */
 i3c_device_info_t *I3C_MasterGetDeviceListAfterDAA(I3C_Type *base, uint8_t *count);
-
-/*!
- * @brief Clear the used device count.
- * @return None.
- */
-void I3C_MasterClearUsedDevCount(void);
-
 /*!
  * @brief Performs a master polling transfer on the I2C/I3C bus.
  *
